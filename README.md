@@ -87,7 +87,7 @@ This repo is now set up for Render with [`render.yaml`](C:\Users\Hp\Documents\Py
 - The app reads `DATABASE_URL` from the environment and still falls back to SQLite locally
 - `SECRET_KEY` can come from Render environment variables
 - The app listens on Render's `PORT`
-- Production dependencies for `gunicorn`, `eventlet`, and PostgreSQL are included
+- Production dependencies for `gunicorn` and PostgreSQL are included
 
 ### Deploy steps
 
@@ -101,5 +101,13 @@ This repo is now set up for Render with [`render.yaml`](C:\Users\Hp\Documents\Py
 - Free web services spin down after 15 minutes without traffic
 - Free Postgres is limited to 1 GB
 - Free Postgres expires 30 days after creation
+
+### If you deploy without Blueprint
+
+Use these manual settings in Render:
+
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `gunicorn -w 1 --threads 100 app:app`
+- Python Version: `3.11.9`
 
 For a serious long-term app, use a paid database or another persistent database provider.
