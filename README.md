@@ -137,7 +137,3 @@ If you want the README to feel even more animated, the next step would be adding
 - a real demo GIF of the app UI
 - a custom SVG banner generated for Storeia
 - animated stats or contribution graphs
-
-## License
-
-This project is currently unlicensed. Add a `LICENSE` file if you want to define reuse terms.
