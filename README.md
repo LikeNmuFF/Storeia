@@ -26,9 +26,9 @@ Storeia is a collaborative storytelling platform for creating interactive, branc
 ## Preview
 
 <div align="center">
-  <img src="https://capsule-render.vercel.app/api?type=rect&text=Build%20stories%20scene%20by%20scene&fontColor=ffffff&color=0:0f172a,100:334155&height=90&animation=fadeIn" alt="Preview banner 1" />
-  <img src="https://capsule-render.vercel.app/api?type=rect&text=Collaborate%20with%20writers%20in%20real%20time&fontColor=ffffff&color=0:14532d,100:059669&height=90&animation=fadeIn" alt="Preview banner 2" />
-  <img src="https://capsule-render.vercel.app/api?type=rect&text=Publish%20and%20play%20interactive%20paths&fontColor=ffffff&color=0:78350f,100:f59e0b&height=90&animation=fadeIn" alt="Preview banner 3" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Build%20stories%20scene%20by%20scene&fontColor=ffffff&color=0:0f172a,100:334155&height=52&fontSize=20&animation=fadeIn" alt="Preview banner 1" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Collaborate%20with%20writers%20in%20real%20time&fontColor=ffffff&color=0:14532d,100:059669&height=52&fontSize=20&animation=fadeIn" alt="Preview banner 2" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Publish%20and%20play%20interactive%20paths&fontColor=ffffff&color=0:78350f,100:f59e0b&height=52&fontSize=20&animation=fadeIn" alt="Preview banner 3" />
 </div>
 
 ## Features
