@@ -77,3 +77,29 @@ story_collab/
   pip install gunicorn eventlet
   gunicorn --worker-class eventlet -w 1 app:app
   ```
+
+## Render Deployment
+
+This repo is now set up for Render with [`render.yaml`](C:\Users\Hp\Documents\Python Projects\pylab\Storeia\render.yaml).
+
+### What changed
+
+- The app reads `DATABASE_URL` from the environment and still falls back to SQLite locally
+- `SECRET_KEY` can come from Render environment variables
+- The app listens on Render's `PORT`
+- Production dependencies for `gunicorn`, `eventlet`, and PostgreSQL are included
+
+### Deploy steps
+
+1. Push this repo to GitHub.
+2. In Render, choose `New > Blueprint`.
+3. Connect the repo and deploy the included `render.yaml`.
+4. Wait for the web service and Postgres database to finish provisioning.
+
+### Important free-tier limits
+
+- Free web services spin down after 15 minutes without traffic
+- Free Postgres is limited to 1 GB
+- Free Postgres expires 30 days after creation
+
+For a serious long-term app, use a paid database or another persistent database provider.

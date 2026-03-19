@@ -8,7 +8,10 @@ import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///story_collab.db'
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///story_collab.db')
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -549,7 +552,11 @@ def on_message(data):
     emit('new_message', msg.to_dict(), room=f'story_{story_id}')
 
 
+with app.app_context():
+    db.create_all()
+
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    socketio.run(app, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    debug = os.environ.get('FLASK_DEBUG', '').lower() in {'1', 'true', 'yes'}
+    socketio.run(app, host='0.0.0.0', port=port, debug=debug)
