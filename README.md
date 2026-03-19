@@ -1,113 +1,143 @@
-# StoryForge — Setup
+# <div align="center">Storeia</div>
 
-## Quick Start
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&height=220&text=Storeia&fontAlign=50&fontAlignY=38&desc=Collaborative%20interactive%20storytelling%20platform&descAlign=50&descAlignY=58&color=0:1a1a2e,35:16213e,70:0f766e,100:f59e0b&fontColor=ffffff" alt="Storeia header" />
+</div>
 
-```bash
-# 1. Create a virtual environment
-python -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
+<div align="center">
+  <img src="static/logo.png" alt="Storeia logo" width="160" />
+</div>
 
-# 2. Install dependencies
-pip install -r requirements.txt
+<div align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&pause=1000&color=F59E0B&center=true&vCenter=true&width=700&lines=Write+branching+stories.;Collaborate+with+other+writers.;Chat+in+real+time+inside+each+story.;Publish+and+play+interactive+narratives." alt="Typing animation" />
+</div>
 
-# 3. Run the app
-python app.py
-```
+<div align="center">
+  <img src="https://img.shields.io/badge/Flask-3.0.3-111827?style=for-the-badge&logo=flask&logoColor=white" alt="Flask badge" />
+  <img src="https://img.shields.io/badge/Socket.IO-Real_time-065f46?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.IO badge" />
+  <img src="https://img.shields.io/badge/SQLAlchemy-ORM-7c2d12?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLAlchemy badge" />
+  <img src="https://img.shields.io/badge/Render-Deploy-3b82f6?style=for-the-badge&logo=render&logoColor=white" alt="Render badge" />
+</div>
 
-Visit: http://127.0.0.1:5000
+<br />
 
----
+Storeia is a collaborative storytelling platform for creating interactive, branching stories with live editing, contributor workflows, real-time chat, and a clean reading experience.
 
-## Project Structure
+## Preview
 
-```
-story_collab/
-├── app.py                  # All routes, models, SocketIO events
-├── requirements.txt
-├── templates/
-│   ├── base.html           # Navbar, flash messages, shared layout
-│   ├── login.html
-│   ├── register.html
-│   ├── dashboard.html      # Story library
-│   ├── create_story.html
-│   ├── story_editor.html   # Main editor + chat panel
-│   └── play_story.html     # Reader view
-└── static/
-    ├── css/style.css
-    └── js/
-        ├── editor.js       # Node/choice editing, collaborator management
-        └── chat.js         # Socket.IO real-time chat
-```
-
----
+<div align="center">
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Build%20stories%20scene%20by%20scene&fontColor=ffffff&color=0:0f172a,100:334155&height=90&animation=fadeIn" alt="Preview banner 1" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Collaborate%20with%20writers%20in%20real%20time&fontColor=ffffff&color=0:14532d,100:059669&height=90&animation=fadeIn" alt="Preview banner 2" />
+  <img src="https://capsule-render.vercel.app/api?type=rect&text=Publish%20and%20play%20interactive%20paths&fontColor=ffffff&color=0:78350f,100:f59e0b&height=90&animation=fadeIn" alt="Preview banner 3" />
+</div>
 
 ## Features
 
-### Interactive Story System
-- Stories are made of **nodes** (scenes) linked by **choices**
-- Each story has one designated starting scene
-- Scenes can be marked as endings
-- Choices link one scene to the next — the reader follows the path
+- Branching story builder with scenes, choices, start nodes, and ending nodes
+- Real-time story chat powered by Socket.IO
+- Multi-user collaboration with invitations and contribution requests
+- Publishing flow for sharing finished stories
+- Reader mode for playing stories through different paths
+- Story starring and basic progress tracking
+- Owner controls for collaborator management and moderation
 
-### Collaboration (GitHub-inspired)
-- Story owners can **invite collaborators by username**
-- Collaborators can edit all scenes and choices
-- Owners can remove collaborators at any time
-- Edit attribution tracked per node (created_by / updated_by)
+## Tech Stack
 
-### Auto Chat Room
-- Every story has its own real-time chat room via **Socket.IO**
-- Chat is only accessible to the owner + collaborators
-- Messages persist in the database
-- Chat loads automatically in the editor view
+- Python
+- Flask
+- Flask-SQLAlchemy
+- Flask-Login
+- Flask-SocketIO
+- SQLite for local development
+- PostgreSQL for Render deployment
 
-### Playing Stories
-- Clean reader view — just the scene and the choices
-- Progress by clicking choices
-- Endings display a "The End" block with a restart option
+## Project Structure
 
----
+```text
+Storeia/
+|-- app.py
+|-- requirements.txt
+|-- render.yaml
+|-- runtime.txt
+|-- templates/
+|-- static/
+|   |-- css/
+|   |-- js/
+|   `-- logo.png
+`-- instance/
+```
 
-## Production Notes
+## Local Setup
 
-- Change `SECRET_KEY` in `app.py` before deploying
-- Swap SQLite for PostgreSQL by updating `SQLALCHEMY_DATABASE_URI`
-- Use `gunicorn` with `eventlet` worker for SocketIO in production:
-  ```bash
-  pip install gunicorn eventlet
-  gunicorn --worker-class eventlet -w 1 app:app
-  ```
+```bash
+python -m venv venv
+source venv/bin/activate        # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+```
 
-## Render Deployment
+Open `http://127.0.0.1:5000`.
 
-This repo is now set up for Render with [`render.yaml`](C:\Users\Hp\Documents\Python Projects\pylab\Storeia\render.yaml).
+## Render Deploy
 
-### What changed
+Storeia is configured for Render and can be deployed from this repo.
 
-- The app reads `DATABASE_URL` from the environment and still falls back to SQLite locally
-- `SECRET_KEY` can come from Render environment variables
-- The app listens on Render's `PORT`
-- Production dependencies for `gunicorn` and PostgreSQL are included
+### Blueprint deploy
 
-### Deploy steps
+1. Push the repo to GitHub.
+2. In Render, select `New -> Blueprint`.
+3. Connect the repository.
+4. Deploy using [`render.yaml`](./render.yaml).
 
-1. Push this repo to GitHub.
-2. In Render, choose `New > Blueprint`.
-3. Connect the repo and deploy the included `render.yaml`.
-4. Wait for the web service and Postgres database to finish provisioning.
-
-### Important free-tier limits
-
-- Free web services spin down after 15 minutes without traffic
-- Free Postgres is limited to 1 GB
-- Free Postgres expires 30 days after creation
-
-### If you deploy without Blueprint
-
-Use these manual settings in Render:
+### Manual deploy settings
 
 - Build Command: `pip install -r requirements.txt`
 - Start Command: `gunicorn -w 1 --threads 100 app:app`
 - Python Version: `3.11.9`
 
-For a serious long-term app, use a paid database or another persistent database provider.
+### Notes
+
+- Local development uses SQLite by default.
+- Render should use `DATABASE_URL` from its managed PostgreSQL database.
+- Set `SECRET_KEY` in production.
+- Free Render instances may sleep when idle.
+
+## Core Experience
+
+### Create
+
+Design stories as connected scenes with branching choices.
+
+### Collaborate
+
+Invite other writers, accept contribution requests, and work inside the same story space.
+
+### Converse
+
+Use built-in real-time chat per story while editing together.
+
+### Publish
+
+Turn drafts into playable public stories for readers.
+
+## Roadmap
+
+- Richer editor UX for large story graphs
+- Story thumbnails and cover uploads
+- Better analytics for published stories
+- Draft history and revision tracking
+- Search, discovery, and genre filtering
+
+## Branding
+
+The project name is now **Storeia**.
+
+If you want the README to feel even more animated, the next step would be adding:
+
+- a real demo GIF of the app UI
+- a custom SVG banner generated for Storeia
+- animated stats or contribution graphs
+
+## License
+
+This project is currently unlicensed. Add a `LICENSE` file if you want to define reuse terms.
