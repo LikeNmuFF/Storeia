@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}New Story — Storeia{% endblock %}
+
+{% block content %}
+<div class="centered-form-page">
+    <div class="form-card">
+        <h1 class="form-heading">New Story</h1>
+        <p class="form-subheading">Give your world a name before you build it.</p>
+
+        <form method="POST" action="{{ url_for('create_story') }}" class="standard-form">
+            <div class="field-group">
+                <label class="field-label" for="title">Story Title</label>
+                <input class="field-input" type="text" id="title" name="title"
+                       placeholder="The Last City of Aldenmoor" required />
+            </div>
+            <div class="field-group">
+                <label class="field-label" for="description">Description <span class="optional-tag">optional</span></label>
+                <textarea class="field-input field-textarea" id="description" name="description"
+                          placeholder="A short summary of what this story is about..."></textarea>
+            </div>
+            <div class="field-group">
+                <label class="field-label">Story Mood <span class="optional-tag">optional</span></label>
+                <div class="mood-picker" id="mood-picker">
+                    <button type="button" class="mood-option" data-mood="mystery" onclick="selectMood('mystery')">&#128269; Mystery</button>
+                    <button type="button" class="mood-option" data-mood="romance" onclick="selectMood('romance')">&#10084; Romance</button>
+                    <button type="button" class="mood-option" data-mood="horror"  onclick="selectMood('horror')">&#128128; Horror</button>
+                    <button type="button" class="mood-option" data-mood="fantasy" onclick="selectMood('fantasy')">&#10024; Fantasy</button>
+                    <button type="button" class="mood-option" data-mood="scifi"   onclick="selectMood('scifi')">&#128640; Sci-Fi</button>
+                    <button type="button" class="mood-option" data-mood="adventure" onclick="selectMood('adventure')">&#9876; Adventure</button>
+                </div>
+                <input type="hidden" name="mood" id="mood-value" value="" />
+            </div>
+            <div class="form-actions">
+                <a href="{{ url_for('dashboard') }}" class="btn btn-ghost">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Story</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectMood(mood) {
+    const current = document.getElementById('mood-value').value;
+    if (current === mood) {
+        // deselect
+        document.getElementById('mood-value').value = '';
+        document.querySelectorAll('.mood-option').forEach(b => b.classList.remove('selected'));
+    } else {
+        document.getElementById('mood-value').value = mood;
+        document.querySelectorAll('.mood-option').forEach(b => {
+            b.classList.toggle('selected', b.dataset.mood === mood);
+        });
+    }
+}
+</script>
+{% endblock %}

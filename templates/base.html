@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Storeia{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="icon" type="png/x-icon" href="{{ url_for('static', filename='logo.png')}}" <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <script>
+        // Apply saved theme before paint to avoid flash
+        const savedTheme = localStorage.getItem('storeia-theme') || 'parchment';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+    </script>
+    {% block head %}{% endblock %}
+</head>
+
+<body>
+
+    <nav class="navbar">
+        <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+            <img src="{{ url_for('static', filename='logo.png')}}" alt="logo" height="36px"
+                style="height: 36px:auto;vertical-align: middle;" />
+            <span class="brand-text">Storeia</span>
+        </a>
+
+        {% if current_user.is_authenticated %}
+        <div class="navbar-actions">
+
+            <div class="user-chip">
+                <span class="user-avatar">{{ current_user.username[0].upper() }}</span>
+                <span class="user-name">{{ current_user.username }}</span>
+            </div>
+            <div class="theme-switcher" title="Switch theme">
+                <button class="theme-swatch" data-theme="parchment" title="Parchment"
+                    onclick="setTheme('parchment')"></button>
+                <button class="theme-swatch" data-theme="midnight" title="Midnight"
+                    onclick="setTheme('midnight')"></button>
+                <button class="theme-swatch" data-theme="dusk" title="Dusk" onclick="setTheme('dusk')"></button>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm" style="color: var(--page);">Sign out</a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-container">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+    <script>
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('storeia-theme', theme);
+            document.querySelectorAll('.theme-swatch').forEach(s => {
+                s.classList.toggle('active', s.dataset.theme === theme);
+            });
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const current = localStorage.getItem('storeia-theme') || 'parchment';
+            document.querySelectorAll('.theme-swatch').forEach(s => {
+                s.classList.toggle('active', s.dataset.theme === current);
+            });
+        });
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

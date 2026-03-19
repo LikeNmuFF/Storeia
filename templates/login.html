@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sign In</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body class="auth-page">
+
+<div class="auth-split">
+    <div class="auth-left">
+        <div class="auth-brand">
+            <img src="{{ url_for('static', filename='logo.png')}}" alt="logo" height="80px" style="height: 80px:auto;vertical-align: middle;" />
+            <h1 class="auth-title">Storeia</h1>
+            <p class="auth-tagline">Where every choice rewrites the world.</p>
+        </div>
+        <div class="auth-decoration">
+            <div class="deco-line"></div>
+            <div class="deco-dot"></div>
+            <div class="deco-line short"></div>
+        </div>
+    </div>
+
+    <div class="auth-right">
+        <div class="auth-card">
+            <h2 class="form-heading">Welcome back</h2>
+            <p class="form-subheading">Pick up where your story left off.</p>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}" class="auth-form">
+                <div class="field-group">
+                    <label class="field-label" for="username">Username</label>
+                    <input class="field-input" type="text" id="username" name="username" placeholder="your_username" required autocomplete="username" />
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="password">Password</label>
+                    <input class="field-input" type="password" id="password" name="password" placeholder="••••••••" required autocomplete="current-password" />
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+            </form>
+
+            <p class="auth-switch">New here? <a href="{{ url_for('register') }}">Create an account</a></p>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

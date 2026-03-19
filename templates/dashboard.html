@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="dashboard-header">
+    <div>
+        <h1 class="page-title">Storeia</h1>
+        <p class="page-sub">Read, write, and build worlds with others.</p>
+    </div>
+    <a href="{{ url_for('create_story') }}" class="btn btn-primary">New Story</a>
+</div>
+
+<!-- Pending contribution requests notification -->
+{% if pending_requests %}
+<div class="requests-banner">
+    <div class="requests-banner-inner">
+        <span class="requests-dot"></span>
+        <strong>{{ pending_requests|length }} pending contribution request{{ 's' if pending_requests|length != 1 }}</strong>
+        <div class="requests-list">
+            {% for req in pending_requests %}
+            <div class="request-row" id="req-{{ req.id }}">
+                <span class="req-avatar">{{ req.user.username[0].upper() }}</span>
+                <div class="req-info">
+                    <strong>{{ req.user.username }}</strong> wants to contribute to
+                    <em>{{ req.story.title }}</em>
+                    {% if req.message %}<p class="req-message">"{{ req.message }}"</p>{% endif %}
+                </div>
+                <div class="req-actions">
+                    <button class="btn btn-sm btn-primary" onclick="respondRequest({{ req.id }}, 'accept')">Accept</button>
+                    <button class="btn btn-sm btn-ghost" onclick="respondRequest({{ req.id }}, 'decline')">Decline</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Tab navigation -->
+<div class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('discover')">Discover</button>
+    <button class="tab-btn" onclick="switchTab('starred')">
+        Starred
+        {% if starred_stories %}<span class="tab-count">{{ starred_stories|length }}</span>{% endif %}
+    </button>
+    <button class="tab-btn" onclick="switchTab('mine')">My Stories</button>
+    <button class="tab-btn" onclick="switchTab('collab')">Collaborating</button>
+</div>
+
+<!-- DISCOVER tab -->
+<div class="tab-panel active" id="tab-discover">
+    {% if published_stories %}
+    <div class="story-grid">
+        {% for story in published_stories %}
+        <div class="story-card" id="pub-card-{{ story.id }}" data-mood="{{ story.mood }}">
+            <div class="story-card-top">
+                <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                    <h3 class="story-card-title">{{ story.title }}</h3>
+                    {% if story.mood %}<span class="mood-badge mood-badge-{{ story.mood }}">{{ story.mood }}</span>{% endif %}
+                </div>
+                <button class="star-btn {% if story.is_starred_by(current_user) %}starred{% endif %}"
+                        onclick="toggleStar({{ story.id }}, this)"
+                        title="{{ 'Unstar' if story.is_starred_by(current_user) else 'Star this story' }}">
+                    <span class="star-icon">&#9733;</span>
+                    <span class="star-count">{{ story.star_count() }}</span>
+                </button>
+            </div>
+            {% if story.description %}
+            <p class="story-card-desc">{{ story.description[:120] }}{% if story.description|length > 120 %}...{% endif %}</p>
+            {% endif %}
+            <div class="story-card-meta">
+                <span>By {{ story.owner.username }}</span>
+                <span>{{ story.nodes|length }} scene{{ 's' if story.nodes|length != 1 }}</span>
+                <span>{{ story.collaborators|length + 1 }} author{{ 's' if story.collaborators|length > 0 }}</span>
+            </div>
+            <div class="story-card-actions">
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-sm btn-primary">Read</a>
+                {% if not story.is_collaborator(current_user) %}
+                    {% if story.pending_request_from(current_user) %}
+                    <button class="btn btn-sm btn-ghost" disabled>Request Pending</button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline contribute-btn"
+                            onclick="openContributeModal({{ story.id }}, '{{ story.title|e }}')"
+                            data-story-id="{{ story.id }}">
+                        Contribute?
+                    </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#9728;</div>
+        <h3>Nothing published yet.</h3>
+        <p>Be the first — publish one of your stories so others can read and contribute.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- STARRED tab -->
+<div class="tab-panel" id="tab-starred">
+    {% if starred_stories %}
+    <div class="story-grid">
+        {% for story in starred_stories %}
+        <div class="story-card">
+            <div class="story-card-top">
+                <h3 class="story-card-title">{{ story.title }}</h3>
+                <button class="star-btn starred" onclick="toggleStar({{ story.id }}, this)">
+                    <span class="star-icon">&#9733;</span>
+                    <span class="star-count">{{ story.star_count() }}</span>
+                </button>
+            </div>
+            {% if story.description %}
+            <p class="story-card-desc">{{ story.description[:120] }}...</p>
+            {% endif %}
+            <div class="story-card-meta">
+                <span>By {{ story.owner.username }}</span>
+                <span>{{ story.nodes|length }} scenes</span>
+            </div>
+            <div class="story-card-actions">
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-sm btn-primary">Read</a>
+                {% if story.is_collaborator(current_user) %}
+                <a href="{{ url_for('story_editor', story_id=story.id) }}" class="btn btn-sm btn-outline">Edit</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#9733;</div>
+        <h3>No starred stories yet.</h3>
+        <p>Star stories in Discover to save them here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- MY STORIES tab -->
+<div class="tab-panel" id="tab-mine">
+    {% if owned_stories %}
+    <div class="story-grid">
+        {% for story in owned_stories %}
+        <div class="story-card">
+            <div class="story-card-top">
+                <h3 class="story-card-title">{{ story.title }}</h3>
+                <div class="card-top-right">
+                    <span class="story-badge owner-badge">Owner</span>
+                    <span class="publish-pill {% if story.is_published %}published{% endif %}"
+                          id="publish-pill-{{ story.id }}"
+                          onclick="togglePublish({{ story.id }})"
+                          title="{{ 'Click to unpublish' if story.is_published else 'Click to publish' }}">
+                        {{ 'Published' if story.is_published else 'Draft' }}
+                    </span>
+                </div>
+            </div>
+            {% if story.description %}
+            <p class="story-card-desc">{{ story.description[:100] }}{% if story.description|length > 100 %}...{% endif %}</p>
+            {% endif %}
+            <div class="story-card-meta">
+                <span>{{ story.nodes|length }} scene{{ 's' if story.nodes|length != 1 }}</span>
+                <span>{{ story.collaborators|length }} collaborator{{ 's' if story.collaborators|length != 1 }}</span>
+                <span>&#9733; {{ story.star_count() }}</span>
+            </div>
+            <div class="story-card-actions">
+                <a href="{{ url_for('story_editor', story_id=story.id) }}" class="btn btn-sm btn-outline">Edit</a>
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-sm btn-ghost">Play</a>
+                <form method="POST" action="{{ url_for('delete_story', story_id=story.id) }}" class="inline-form"
+                      onsubmit="return confirm('Delete this story? This cannot be undone.')">
+                    <button type="submit" class="btn btn-sm btn-danger-ghost">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#9998;</div>
+        <h3>No stories yet.</h3>
+        <p>Start with a blank page. Your first scene is waiting.</p>
+        <a href="{{ url_for('create_story') }}" class="btn btn-primary">Write Something</a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- COLLABORATING tab -->
+<div class="tab-panel" id="tab-collab">
+    {% if collab_stories %}
+    <div class="story-grid">
+        {% for story in collab_stories %}
+        <div class="story-card">
+            <div class="story-card-top">
+                <h3 class="story-card-title">{{ story.title }}</h3>
+                <span class="story-badge collab-badge">Collaborator</span>
+            </div>
+            {% if story.description %}
+            <p class="story-card-desc">{{ story.description[:100] }}{% if story.description|length > 100 %}...{% endif %}</p>
+            {% endif %}
+            <div class="story-card-meta">
+                <span>By {{ story.owner.username }}</span>
+                <span>{{ story.nodes|length }} scene{{ 's' if story.nodes|length != 1 }}</span>
+            </div>
+            <div class="story-card-actions">
+                <a href="{{ url_for('story_editor', story_id=story.id) }}" class="btn btn-sm btn-outline">Edit</a>
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-sm btn-ghost">Play</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128101;</div>
+        <h3>Not collaborating on anything yet.</h3>
+        <p>Find a published story in Discover and request to contribute.</p>
+        <button class="btn btn-outline" onclick="switchTab('discover')">Browse Stories</button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Contribute modal -->
+<div class="modal-backdrop" id="contribute-modal" style="display:none">
+    <div class="modal-card">
+        <h3 class="modal-title">Request to Contribute</h3>
+        <p class="modal-sub">Send a note to the author of <strong id="modal-story-name"></strong>.</p>
+        <textarea class="field-input field-textarea" id="contribute-message"
+                  placeholder="Tell them why you'd like to help shape this story... (optional)"></textarea>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeContributeModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="submitContributeRequest()">Send Request</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => {
+        const tabs = ['discover','starred','mine','collab'];
+        b.classList.toggle('active', tabs[i] === name);
+    });
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+}
+
+async function toggleStar(storyId, btn) {
+    const res = await fetch(`/api/story/${storyId}/star`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+        btn.classList.toggle('starred', data.starred);
+        btn.querySelector('.star-count').textContent = data.count;
+    }
+}
+
+async function togglePublish(storyId) {
+    const res = await fetch(`/api/story/${storyId}/publish`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+        const pill = document.getElementById(`publish-pill-${storyId}`);
+        pill.textContent = data.is_published ? 'Published' : 'Draft';
+        pill.classList.toggle('published', data.is_published);
+        pill.title = data.is_published ? 'Click to unpublish' : 'Click to publish';
+    }
+}
+
+let activeContributeStoryId = null;
+
+function openContributeModal(storyId, storyTitle) {
+    activeContributeStoryId = storyId;
+    document.getElementById('modal-story-name').textContent = storyTitle;
+    document.getElementById('contribute-message').value = '';
+    document.getElementById('contribute-modal').style.display = 'flex';
+}
+
+function closeContributeModal() {
+    document.getElementById('contribute-modal').style.display = 'none';
+    activeContributeStoryId = null;
+}
+
+async function submitContributeRequest() {
+    if (!activeContributeStoryId) return;
+    const message = document.getElementById('contribute-message').value.trim();
+    const res = await fetch(`/api/story/${activeContributeStoryId}/request_contribute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        const btn = document.querySelector(`.contribute-btn[data-story-id="${activeContributeStoryId}"]`);
+        if (btn) { btn.textContent = 'Request Pending'; btn.disabled = true; btn.classList.remove('btn-outline'); }
+        closeContributeModal();
+    } else {
+        alert(data.error || 'Could not send request.');
+    }
+}
+
+async function respondRequest(reqId, action) {
+    const res = await fetch(`/api/contribute_request/${reqId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+    });
+    if (res.ok) {
+        document.getElementById(`req-${reqId}`).remove();
+        const remaining = document.querySelectorAll('.request-row').length;
+        if (remaining === 0) document.querySelector('.requests-banner').remove();
+    }
+}
+
+// Close modal on backdrop click
+document.getElementById('contribute-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeContributeModal();
+});
+</script>
+{% endblock %}

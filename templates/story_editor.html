@@ -1,0 +1,257 @@
+{% extends "base.html" %}
+{% block title %}Editor — {{ story.title }}{% endblock %}
+
+{% block content %}
+<div class="editor-layout">
+
+    <!-- Sidebar -->
+    <aside class="editor-sidebar" style="overflow-y:auto;">
+        <div class="sidebar-header">
+            <h2 class="sidebar-title">Scenes</h2>
+            <button class="btn btn-sm btn-primary" id="btn-add-node">+ Scene</button>
+        </div>
+
+        <ul class="node-list" id="node-list">
+            {% for node in nodes %}
+            <li class="node-item {% if node.is_start %}node-start{% endif %} {% if node.is_ending %}node-ending{% endif %}"
+                data-id="{{ node.id }}" onclick="selectNode({{ node.id }})">
+                <span class="node-item-title">{{ node.title }}</span>
+                {% if node.is_start %}<span class="node-tag start-tag">Start</span>{% endif %}
+                {% if node.is_ending %}<span class="node-tag end-tag">End</span>{% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+
+        <!-- Collaborators -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Collaborators</h3>
+            <ul class="collab-list" id="collab-list">
+                <li class="collab-item owner-item">
+                    <span class="collab-avatar">{{ story.owner.username[0].upper() }}</span>
+                    <span>{{ story.owner.username }}</span>
+                    <span class="story-badge owner-badge small">Owner</span>
+                </li>
+                {% for collab in story.collaborators %}
+                <li class="collab-item" data-user-id="{{ collab.id }}">
+                    <span class="collab-avatar">{{ collab.username[0].upper() }}</span>
+                    <span>{{ collab.username }}</span>
+                    {% if story.owner_id == current_user.id %}
+                    <button class="btn-icon" onclick="removeCollaborator({{ collab.id }})">&#10005;</button>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% if story.owner_id == current_user.id %}
+            <div class="invite-row">
+                <input class="field-input field-input-sm" type="text" id="invite-username" placeholder="Invite by username" />
+                <button class="btn btn-sm btn-outline" onclick="inviteCollaborator()">Invite</button>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if story.owner_id == current_user.id %}
+        <!-- Mood -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Story Mood</h3>
+            <div style="display:flex;flex-wrap:wrap;gap:5px;">
+                {% for m, icon in [('mystery','🔍'),('romance','❤'),('horror','💀'),('fantasy','✨'),('scifi','🚀'),('adventure','⚔')] %}
+                <button type="button"
+                        class="mood-option {% if story.mood == m %}selected{% endif %}"
+                        data-mood="{{ m }}"
+                        onclick="updateMood('{{ m }}')"
+                        style="padding:4px 10px;font-size:0.72rem;">{{ icon }} {{ m }}</button>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Publish -->
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Publish</h3>
+            <button class="publish-toggle-btn {% if story.is_published %}published{% endif %}"
+                    id="publish-toggle" onclick="togglePublish()">
+                <span class="publish-dot"></span>
+                <span id="publish-label">{{ 'Published' if story.is_published else 'Draft — click to publish' }}</span>
+            </button>
+            <p class="publish-hint" id="publish-hint">
+                {% if story.is_published %}Live on Discover. Others can read and request to contribute.
+                {% else %}Only you and collaborators can access this story.{% endif %}
+            </p>
+        </div>
+
+        <!-- Pending contribution requests -->
+        {% if pending_requests %}
+        <div class="sidebar-section">
+            <h3 class="sidebar-section-title">Contribution Requests <span class="req-count-badge">{{ pending_requests|length }}</span></h3>
+            <ul class="pending-req-list" id="pending-req-list">
+                {% for req in pending_requests %}
+                <li class="pending-req-item" id="preq-{{ req.id }}">
+                    <div class="pending-req-user">
+                        <span class="collab-avatar">{{ req.user.username[0].upper() }}</span>
+                        <div>
+                            <strong>{{ req.user.username }}</strong>
+                            {% if req.message %}<p class="req-message-small">"{{ req.message[:80] }}"</p>{% endif %}
+                        </div>
+                    </div>
+                    <div class="pending-req-actions">
+                        <button class="btn btn-sm btn-primary" onclick="respondRequest({{ req.id }}, 'accept')">Accept</button>
+                        <button class="btn btn-sm btn-ghost" onclick="respondRequest({{ req.id }}, 'decline')">Decline</button>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+        {% endif %}
+    </aside>
+
+    <!-- Main editor -->
+    <div class="editor-main">
+        <div class="editor-topbar">
+            <div class="editor-story-title">
+                <span class="breadcrumb-link" onclick="window.location='{{ url_for('dashboard') }}'">Library</span>
+                <span class="breadcrumb-sep">/</span>
+                <span class="breadcrumb-current">{{ story.title }}</span>
+            </div>
+            <div class="editor-topbar-actions">
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-sm btn-outline" target="_blank">Play Story</a>
+            </div>
+        </div>
+
+        <div class="node-editor-area" id="node-editor-area">
+            <div class="node-editor-placeholder">
+                <p>Select a scene from the sidebar to edit it.</p>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Floating chat button -->
+<button id="chat-toggle-btn" class="chat-floating-btn" title="Story Chat">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+    <span class="chat-unread-dot" id="chat-unread-dot"></span>
+</button>
+
+<!-- Chat panel -->
+<aside class="chat-panel" id="chat-panel">
+    <div class="chat-header">
+        <h3 class="chat-title">Story Chat</h3>
+        <span class="chat-subtitle">Collaborators only</span>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+        {% for msg in messages %}
+        <div class="chat-message {% if msg.user_id == current_user.id %}chat-mine{% endif %}">
+            <span class="msg-author">{{ msg.user.username }}</span>
+            <p class="msg-text">{{ msg.content }}</p>
+            <span class="msg-time">{{ msg.created_at.strftime('%H:%M') }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="chat-input-row">
+        <input class="field-input field-input-sm" type="text" id="chat-input" placeholder="Say something..." />
+        <button class="btn btn-sm btn-primary" onclick="sendMessage()">Send</button>
+    </div>
+</aside>
+
+<!-- Node editor template -->
+<template id="node-editor-template">
+    <div class="node-editor-form">
+        <div class="node-editor-header">
+            <input class="node-title-input" type="text" id="node-title" placeholder="Scene title" />
+            <div class="node-editor-header-actions">
+                <label class="toggle-label">
+                    <input type="checkbox" id="node-is-ending" />
+                    <span>Ending scene</span>
+                </label>
+                <button class="btn btn-sm btn-danger-ghost" id="btn-delete-node">Delete Scene</button>
+            </div>
+        </div>
+
+        <!-- Word count bar -->
+        <div class="word-count-bar">
+            <span class="word-count-num" id="wc-num">0</span>
+            <span>words</span>
+            <div class="word-count-track">
+                <div class="word-count-fill" id="wc-fill" style="width:0%"></div>
+            </div>
+            <span id="wc-label" style="font-size:0.72rem;color:var(--text-muted);">just getting started</span>
+        </div>
+
+        <textarea class="node-content-input" id="node-content" placeholder="Write what happens in this scene..."></textarea>
+
+        <div class="node-save-row">
+            <button class="btn btn-sm btn-primary" id="btn-save-node">Save Scene</button>
+            <span class="save-indicator" id="save-indicator"></span>
+        </div>
+
+        <div class="choices-section">
+            <div class="choices-header">
+                <h4 class="choices-title">Choices</h4>
+                <button class="btn btn-sm btn-outline" id="btn-add-choice">+ Add Choice</button>
+            </div>
+            <div class="choices-list" id="choices-list"></div>
+        </div>
+    </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STORY_ID = {{ story.id }};
+const CURRENT_USER = "{{ current_user.username }}";
+const IS_OWNER = {{ 'true' if story.owner_id == current_user.id else 'false' }};
+let IS_PUBLISHED = {{ 'true' if story.is_published else 'false' }};
+let CURRENT_MOOD = "{{ story.mood }}";
+
+async function togglePublish() {
+    const res = await fetch(`/api/story/${STORY_ID}/publish`, { method: 'POST' });
+    const data = await res.json();
+    if (res.ok) {
+        IS_PUBLISHED = data.is_published;
+        const btn = document.getElementById('publish-toggle');
+        const label = document.getElementById('publish-label');
+        const hint = document.getElementById('publish-hint');
+        btn.classList.toggle('published', data.is_published);
+        label.textContent = data.is_published ? 'Published' : 'Draft — click to publish';
+        if (hint) hint.textContent = data.is_published
+            ? 'Live on Discover. Others can read and request to contribute.'
+            : 'Only you and collaborators can access this story.';
+    }
+}
+
+async function updateMood(mood) {
+    if (CURRENT_MOOD === mood) mood = '';
+    const res = await fetch(`/api/story/${STORY_ID}/mood`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mood })
+    });
+    if (res.ok) {
+        CURRENT_MOOD = mood;
+        document.querySelectorAll('#sidebar-mood-picker .mood-option, [onclick^="updateMood"]').forEach(b => {
+            b.classList.toggle('selected', b.dataset.mood === mood);
+        });
+    }
+}
+
+async function respondRequest(reqId, action) {
+    const res = await fetch(`/api/contribute_request/${reqId}/respond`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action })
+    });
+    const data = await res.json();
+    if (res.ok) {
+        document.getElementById(`preq-${reqId}`)?.remove();
+        if (action === 'accept' && data.username) {
+            const list = document.getElementById('collab-list');
+            const li = document.createElement('li');
+            li.className = 'collab-item';
+            li.innerHTML = `<span class="collab-avatar">${data.username[0].toUpperCase()}</span><span>${data.username}</span>`;
+            if (list) list.appendChild(li);
+        }
+    }
+}
+</script>
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+{% endblock %}

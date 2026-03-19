@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}{{ story.title }} — Storeia{% endblock %}
+
+{% block content %}
+<div class="play-layout">
+    <div class="play-container">
+        <div class="play-header">
+            <a href="{{ url_for('dashboard') }}" class="play-back-link">&#8592; Library</a>
+            <h1 class="play-story-title">
+                {% if story.mood %}
+                    {% set mood_icons = {'mystery': '🔍', 'romance': '❤', 'horror': '💀', 'fantasy': '✨', 'scifi': '🚀', 'adventure': '⚔'} %}
+                    <span style="font-style:normal;margin-right:6px;">{{ mood_icons.get(story.mood, '') }}</span>
+                {% endif %}
+                {{ story.title }}
+            </h1>
+        </div>
+
+        <!-- Reading progress bar -->
+        <div class="reading-progress-wrap" id="progress-wrap" style="display:none;">
+            <div class="reading-progress-track">
+                <div class="reading-progress-fill" id="progress-fill" style="width:0%"></div>
+            </div>
+            <span class="reading-progress-label" id="progress-label">0 of {{ story.nodes|length }} scenes</span>
+        </div>
+
+        <div class="play-card">
+            <h2 class="scene-title">{{ node.title }}</h2>
+            <div class="scene-content">
+                {{ node.content | replace('\n', '<br>') | safe }}
+            </div>
+
+            {% if node.is_ending %}
+            <div class="ending-block">
+                <div class="ending-rule"></div>
+                <p class="ending-label">— The End —</p>
+                <a href="{{ url_for('play_story', story_id=story.id) }}" class="btn btn-outline" onclick="clearProgress()">Start Over</a>
+            </div>
+            {% elif node.choices %}
+            <div class="choices-area">
+                <p class="choices-prompt">What do you do?</p>
+                {% for choice in node.choices | sort(attribute='order') %}
+                    {% if choice.to_node_id %}
+                    <a href="{{ url_for('play_node', story_id=story.id, node_id=choice.to_node_id) }}"
+                       class="choice-btn">
+                        <span class="choice-arrow">&#8594;</span>
+                        {{ choice.label }}
+                    </a>
+                    {% else %}
+                    <span class="choice-btn choice-unlinked" title="This choice leads nowhere yet">
+                        <span class="choice-arrow">&#8594;</span>
+                        {{ choice.label }}
+                        <span class="unlinked-tag">unlinked</span>
+                    </span>
+                    {% endif %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="ending-block">
+                <div class="ending-rule"></div>
+                <p class="ending-label">No choices defined yet.</p>
+                {% if current_user.is_authenticated and story.is_collaborator(current_user) %}
+                <a href="{{ url_for('story_editor', story_id=story.id) }}" class="btn btn-outline">Edit Story</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="play-footer">
+            <span>Written by {{ story.owner.username }}</span>
+            <span>{{ story.nodes | length }} scene{{ 's' if story.nodes | length != 1 }}</span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const STORY_ID_PLAY = {{ story.id }};
+const NODE_ID_PLAY  = {{ node.id }};
+const TOTAL_SCENES  = {{ story.nodes | length }};
+
+async function trackProgress() {
+    try {
+        const res = await fetch(`/api/story/${STORY_ID_PLAY}/progress`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ node_id: NODE_ID_PLAY })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const wrap = document.getElementById('progress-wrap');
+        const fill = document.getElementById('progress-fill');
+        const label = document.getElementById('progress-label');
+        if (wrap && fill && label) {
+            wrap.style.display = 'flex';
+            fill.style.width = data.pct + '%';
+            label.textContent = `${data.visited} of ${data.total} scene${data.total !== 1 ? 's' : ''} visited`;
+        }
+    } catch (e) {}
+}
+
+function clearProgress() {
+    // Cookie cleared server-side on next play start; just a UX hint
+}
+
+document.addEventListener('DOMContentLoaded', trackProgress);
+</script>
+{% endblock %}
